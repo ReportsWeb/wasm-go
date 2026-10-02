@@ -1,0 +1,4 @@
+github.com/ReportsWeb/wasm-go/reportsweb v1.0.0 h1:XUSYI/Q6tfITaIuEZG54BwC1cQdI2sKnBAxb6GCtT7Y=
+github.com/ReportsWeb/wasm-go/reportsweb v1.0.0/go.mod h1:p5XP/X2v8aDKPzrjHs1CU+J994qhNZR8HJyoK0iIIng=
+github.com/lib/pq v1.12.3 h1:tTWxr2YLKwIvK90ZXEw8GP7UFHtcbTtty8zsI+YjrfQ=
+github.com/lib/pq v1.12.3/go.mod h1:/p+8NSbOcwzAEI7wiMXFlgydTwcgTr3OSKMsD2BitpA=

@@ -1,0 +1,123 @@
+name: reports-web-go-03
+services:
+  engine:
+    image: ghcr.io/reportsweb/engine:1.0.0
+    healthcheck:
+      test:
+      - CMD
+      - node
+      - -e
+      - fetch('http://127.0.0.1:3107/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: reports_web_sample
+      POSTGRES_USER: reports_web
+      POSTGRES_PASSWORD: reports-web-local-only
+    volumes:
+    - type: bind
+      source: ../common/database/001_schema.sql
+      target: /docker-entrypoint-initdb.d/001_schema.sql
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ../common/database/002_seed.sql
+      target: /docker-entrypoint-initdb.d/002_seed.sql
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ../common/database/003_framework_excel.sql
+      target: /docker-entrypoint-initdb.d/003_framework_excel.sql
+      read_only: true
+      bind:
+        create_host_path: false
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U reports_web -d reports_web_sample
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  api:
+    build:
+      context: ./api
+    environment:
+      REPORTS_ENGINE_URL: http://engine:3107
+      REPORTS_DB_URL: postgres://reports_web:reports-web-local-only@database:5432/reports_web_sample?sslmode=disable
+      REPORTS_PUBLIC_ASSET_BASE: /report-api?action=asset&name=
+      REPORTS_PREVIEW_URL: /preview/
+    volumes:
+    - type: volume
+      source: reports-web-runtime
+      target: /opt/reports/web
+      read_only: true
+    depends_on:
+      engine:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+      runtime:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8080/demo/reports.web/samples/go/health
+      interval: 2s
+      timeout: 4s
+      retries: 60
+  client:
+    image: nginx:1.27-alpine
+    ports:
+    - 127.0.0.1:${SAMPLE_PORT:-19252}:8080
+    environment:
+      REPORTS_LANGUAGE: Go
+      REPORTS_API_URL: http://api:8080/demo/reports.web/samples/go/api
+      REPORTS_PREVIEW_URL: http://api:8080/demo/reports.web/preview/
+      REPORTS_APP_URL: http://api:8080
+    volumes:
+    - type: bind
+      source: ./client/index.html
+      target: /usr/share/nginx/html/index.html
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ./client/nginx.conf.template
+      target: /etc/nginx/templates/default.conf.template
+      read_only: true
+      bind:
+        create_host_path: false
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8080/
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  runtime:
+    image: ghcr.io/reportsweb/engine:1.0.0
+    user: root
+    command:
+    - export-runtime
+    volumes:
+    - type: volume
+      source: reports-web-runtime
+      target: /export
+volumes:
+  reports-web-runtime: {}

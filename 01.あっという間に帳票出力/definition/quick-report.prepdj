@@ -1,0 +1,2 @@
+{"Version":"13.0.0","CoordinateUnit":"mm","Title":"あっという間に帳票出力","Paper":6,"CustomWidthMm":210,"CustomHeightMm":297,"Objects":[{"Id":"quick_title","Name":"Title","Kind":0,"X":25,"Y":35,"Width":160,"Height":18,"Text":"帳票タイトル","FontFamily":"Noto Sans CJK JP","FontSizePt":22,"HorizontalAlignment":"CENTER","Visible":true},{"Id":"quick_customer","Name":"CustomerName","Kind":0,"X":25,"Y":75,"Width":160,"Height":14,"Text":"お客様名","FontFamily":"Noto Sans CJK JP","FontSizePt":16,"HorizontalAlignment":"CENTER","Visible":true}]}
+
