@@ -14,7 +14,7 @@ Build print data (PREPEJ) from a report definition (`.prepdj`) and render it to 
 
 ```sh
 go get github.com/ReportsWeb/wasm-go/reportsweb@v1.0.0
-docker run -d -p 3107:3107 ghcr.io/reportsweb/engine:1.0.0
+docker run -d -p 3107:3107 ghcr.io/reportsweb/engine:1.0.1
 ```
 
 標準ライブラリーだけを使います（Go 1.22 以降）。エンジンは Docker イメージで動きます。
@@ -82,7 +82,7 @@ func main() {
 エンジンのイメージは体験版で、出力には赤い「SAMPLE」の印が付きます。ご購入後に納品するライセンスファイルをエンジンに設定すると、印が消えます。
 
 ```sh
-docker run -d -p 3107:3107 -v /path/to/reports-web.license:/app/reports-web.license:ro ghcr.io/reportsweb/engine:1.0.0
+docker run -d -p 3107:3107 -v /path/to/reports-web.license:/app/reports-web.license:ro ghcr.io/reportsweb/engine:1.0.1
 ```
 
 開発用パソコン 1 台につき 1 ライセンス、運用環境はランタイムライセンスフリーです。詳しくは [LICENSE.md](LICENSE.md) と [使用許諾](https://www.pao.ac/reports.web/manual/index.html#16) をご覧ください。
