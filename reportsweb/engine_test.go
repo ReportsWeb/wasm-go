@@ -11,7 +11,7 @@ import (
 
 // Live tests run only when REPORTS_ENGINE_URL points to an engine:
 //
-//	docker run -d -p 3107:3107 ghcr.io/reportsweb/engine:1.0.1
+//	docker run -d -p 3107:3107 ghcr.io/reportsweb/engine:1.0.0
 //	REPORTS_ENGINE_URL=http://127.0.0.1:3107 go test ./...
 func liveEngine(t *testing.T) *Engine {
 	if os.Getenv("REPORTS_ENGINE_URL") == "" {
