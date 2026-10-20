@@ -3,6 +3,8 @@ WORKDIR /work
 COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
+# go test は帳票定義（resources）を読む（PR-330）
+COPY resources ./resources
 RUN go test ./... && CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/reports-go .
 
 FROM alpine:3.22

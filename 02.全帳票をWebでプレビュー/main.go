@@ -20,7 +20,7 @@ import (
 )
 
 const routeBase = "/demo/reports.web/samples/go"
-const maxBody = 32 << 20
+const maxBody = 64 << 20
 
 var samples = [][2]string{{"quick-start", "あっという間に帳票出力"}, {"multiples-of-ten", "10のサンプル"}, {"postal", "郵便番号一覧（定義切替）"}, {"estimate", "見積書（表紙＋明細）"}, {"invoice", "請求書"}, {"products", "商品大小分類（途中で小計）"}, {"business-card", "名刺"}, {"design-showcase", "デザイン機能見本"}}
 
@@ -132,7 +132,7 @@ func (a *app) api(w http.ResponseWriter, r *http.Request) {
 		a.asset(w, q.Get("name"))
 		return
 	}
-	if !valid(sample) {
+	if !valid(sample) && !(action == "server-pdf" && r.Method == "POST") {
 		problem(w, 400, "帳票を選択してください。")
 		return
 	}
@@ -306,7 +306,7 @@ func (a *app) pdf(w http.ResponseWriter, r *http.Request, sample string) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", "inline; filename=\""+sample+".pdf\"")
+	w.Header().Set("Content-Disposition", "inline; filename=\""+safePDFName(sample)+".pdf\"")
 	w.Header().Set("X-Reports-Engine", "server-wasm")
 	w.Write(pdf)
 }
@@ -337,4 +337,8 @@ func inline(v any, a *app) error {
 		}
 	})
 	return first
+}
+
+func safePDFName(s string) string {
+ return strings.Map(func(r rune) rune { if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("_.-", r) { return r }; return '_' }, s)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -112,6 +113,18 @@ func (a *app) buildSimple(sample string) (*reportsweb.Builder, error) {
 			return nil, e
 		}
 	}
+	// 名刺は 5 段。繰返しの物体は、何も書かないと 1 段目にしか描かない（原本と同じ、D-37）。
+	// 各段に定義の文字をそのまま書く。
+	if sample == "business-card" {
+		for _, raw := range d["Objects"].([]any) {
+			o := raw.(map[string]any)
+			for i := 0; i < repeat(o); i++ {
+				if e = b.SetValueAt(s(o, "Name"), s(o, "Text"), i, true); e != nil {
+					return nil, e
+				}
+			}
+		}
+	}
 	e = b.PageEnd()
 	return b, e
 }
@@ -141,7 +154,7 @@ func (a *app) buildMultiples() (*reportsweb.Builder, error) {
 			i := (page-1)*15 + line + 1
 			b.SetValueAt("行番号", i, line, true)
 			b.SetValueAt("10倍数", i*10, line, true)
-			b.SetValueAt("横線", "", line, true)
+			b.SetValueAt("横線", nil, line, true) // 罫線・枠は値を書かずに描く（"" を書くと描かない。原本と同じ、D-33）
 			// 100で割り切れる値だけ、この行の文字色を青にする。
 			if (i*10)%100 == 0 {
 				b.ChangeAttributes("10倍数", reportsweb.Map{"foreground": "#FF0000FF"}, line)
@@ -186,9 +199,9 @@ func (a *app) buildPostal() (*reportsweb.Builder, error) {
 			b.SetValueAt("郵便番号", at(v, 0), i, true)
 			b.SetValueAt("市区町村", at(v, 1), i, true)
 			b.SetValueAt("住所", at(v, 2), i, true)
-			b.SetValueAt("横罫線", "", i, true)
+			b.SetValueAt("横罫線", nil, i, true)
 			if page >= 5 && i%2 == 1 {
-				b.SetValueAt("網掛け", "", i, true)
+				b.SetValueAt("網掛け", nil, i, true)
 			}
 		}
 		if page < 5 && start < end {
@@ -233,8 +246,10 @@ func (a *app) buildEstimate() (*reportsweb.Builder, error) {
 		b.SetValue("消費税額", number(h["消費税額"]))
 		b.SetValue("フッタ合計", number(h["合計金額"]))
 		for i := 0; i <= 6; i++ {
-			for _, n := range []string{"品番白", "品名白", "数量白", "単価白", "金額白", "品番青", "品名青", "数量青", "単価青", "金額青"} {
-				b.SetValueAt(n, "", i, true)
+			for _, n := range []string{"品番白", "品名白", "数量白", "単価白", "金額白", "品番青", "品名青", "数量青", "単価青", "金額青",
+				// 品名青・単価青と同じ位置の帯。何も書かないと 1 行目にしか描かない（D-37）。
+				"Square5", "Square10"} {
+				b.SetValueAt(n, nil, i, true)
 			}
 		}
 		i := 0
@@ -296,8 +311,8 @@ func (a *app) buildInvoice() (*reportsweb.Builder, error) {
 			next = xs[j] + (f(o, "Width")+adjust[j])*px
 		}
 		for i := 0; i < maxH; i++ {
-			b.SetValueAt("hLine", "", i, true)
-			b.SetValueAt("LineRect", "", i, true)
+			b.SetValueAt("hLine", nil, i, true)
+			b.SetValueAt("LineRect", nil, i, true)
 			if i == 0 {
 				b.ChangeAttributes("hLine", reportsweb.Map{"borderWidth": .5 * px}, i)
 			}
@@ -342,7 +357,7 @@ func (a *app) buildInvoice() (*reportsweb.Builder, error) {
 			if j < maxV {
 				x = xs[j]
 			}
-			b.SetValueAt("vLine", "", j, true)
+			b.SetValueAt("vLine", nil, j, true)
 			b.ChangeAttributes("vLine", reportsweb.Map{"x": x}, j)
 			if j == 0 || j == maxV {
 				b.ChangeAttributes("vLine", reportsweb.Map{"borderWidth": .5 * px}, j)
@@ -353,28 +368,42 @@ func (a *app) buildInvoice() (*reportsweb.Builder, error) {
 		}
 		total := int64(0)
 		for row, r := range current {
-			amount := integer(s(r, "数量")) * integer(s(r, "単価"))
-			total += amount
+			quantity, err := invoiceInteger(s(r, "数量"))
+			if err != nil {
+				return nil, err
+			}
+			price, err := invoiceInteger(s(r, "単価"))
+			if err != nil {
+				return nil, err
+			}
+			amount, err := invoiceMultiply(quantity, price)
+			if err != nil {
+				return nil, err
+			}
+			total, err = invoiceAdd(total, amount)
+			if err != nil {
+				return nil, err
+			}
 			i := row + 1
 			b.SetValueAt("field1", s(r, "品番"), i, true)
 			b.SetValueAt("field2", s(r, "品名"), i, true)
 			b.SetValueAt("field3", s(r, "数量"), i, true)
-			b.SetValueAt("field4", number(r["単価"]), i, true)
-			b.SetValueAt("field5", number(amount), i, true)
+			b.SetValueAt("field4", invoiceNumber(r["単価"]), i, true)
+			b.SetValueAt("field5", invoiceNumber(amount), i, true)
 		}
-		tax := int64(float64(total)*.05 + .5)
+		tax := float64(total) * .05
 		for k, v := range []struct {
 			label  string
-			amount int64
-		}{{"小計", total}, {"消費税", tax}, {"合計", total + tax}} {
+			amount float64
+		}{{"小計", float64(total)}, {"消費税", tax}, {"合計", float64(total) + tax}} {
 			row := maxH - 3 + k
 			b.SetValueAt("field4", v.label, row, true)
-			b.SetValueAt("field5", number(v.amount), row, true)
+			b.SetValueAt("field5", invoiceNumber(v.amount), row, true)
 			b.ChangeAttributes("field4", reportsweb.Map{"fontSize": 16, "bold": true, "horizontalAlignment": "Center"}, row)
 		}
-		b.SetValue("txtTotal", number(total+tax))
+		b.SetValue("txtTotal", invoiceNumber(float64(total)+tax))
 		b.ChangeAttributes("hLine", reportsweb.Map{"strokeStyle": "Double"}, maxH-3)
-		b.SetValueAt("hLine", "", maxH, true)
+		b.SetValueAt("hLine", nil, maxH, true)
 		b.ChangeAttributes("hLine", reportsweb.Map{"borderWidth": .5 * px}, maxH)
 		b.PageEnd()
 	}
@@ -403,7 +432,7 @@ func (a *app) buildProducts() (*reportsweb.Builder, error) {
 		small[s(r, "大分類コード")+":"+s(r, "小分類コード")] = s(r, "小分類名称")
 	}
 	stream := []reportsweb.Map{}
-	prevB, prevS := "", ""
+	prevB, prevS, prevBN, prevSN := "", "", "", ""
 	bc, sc := 0, 0
 	subtotal := func(kind, name string, count int) reportsweb.Map {
 		label := "大分類"
@@ -413,33 +442,34 @@ func (a *app) buildProducts() (*reportsweb.Builder, error) {
 		return reportsweb.Map{"大分類": "", "小分類": fmt.Sprintf("%s(%s)小計", label, name), "品番": fmt.Sprintf("%d 冊", count), "品名": "", "kind": kind}
 	}
 	for _, r := range pr {
-		bn := big[s(r, "大分類コード")]
-		sn := small[s(r, "大分類コード")+":"+s(r, "小分類コード")]
-		if prevS != "" && prevS != sn {
-			stream = append(stream, subtotal("small", prevS, sc))
+		bk := s(r, "大分類コード")
+		sk := bk + ":" + s(r, "小分類コード")
+		bn, sn := big[bk], small[sk]
+		if prevS != "" && prevS != sk {
+			stream = append(stream, subtotal("small", prevSN, sc))
 			sc = 0
 		}
-		if prevB != "" && prevB != bn {
-			stream = append(stream, subtotal("big", prevB, bc))
+		if prevB != "" && prevB != bk {
+			stream = append(stream, subtotal("big", prevBN, bc))
 			bc = 0
 		}
 		bv, sv := bn, sn
-		if prevB == bn {
+		if prevB == bk {
 			bv = ""
 		}
-		if prevS == sn {
+		if prevS == sk {
 			sv = ""
 		}
 		stream = append(stream, reportsweb.Map{"大分類": bv, "小分類": sv, "品番": s(r, "品番"), "品名": s(r, "品名"), "kind": "detail"})
-		prevB, prevS = bn, sn
+		prevB, prevS, prevBN, prevSN = bk, sk, bn, sn
 		bc++
 		sc++
 	}
 	if prevS != "" {
-		stream = append(stream, subtotal("small", prevS, sc))
+		stream = append(stream, subtotal("small", prevSN, sc))
 	}
 	if prevB != "" {
-		stream = append(stream, subtotal("big", prevB, bc))
+		stream = append(stream, subtotal("big", prevBN, bc))
 	}
 	d, e := a.sampleDefinition("products")
 	if e != nil {
@@ -458,7 +488,7 @@ func (a *app) buildProducts() (*reportsweb.Builder, error) {
 				b.SetValueAt(n, r[n], i, true)
 			}
 			for _, n := range []string{"枠_大分類", "枠_小分類", "枠_品番", "枠_品名"} {
-				b.SetValueAt(n, "", i, true)
+				b.SetValueAt(n, nil, i, true)
 				if r["kind"] != "detail" {
 					color := "#FFFFB6C1"
 					if r["kind"] == "small" {
@@ -529,6 +559,50 @@ func num(v any) float64 {
 	}
 	return 0
 }
+
+// Reports.NET invoice: ToInt64 rounds each operand to even before multiplication.
+func invoiceInteger(v string) (int64, error) {
+	n, err := strconv.ParseFloat(v, 64)
+	if err != nil || math.IsNaN(n) || math.IsInf(n, 0) {
+		return 0, fmt.Errorf("invalid invoice numeric value: %q", v)
+	}
+	n = math.RoundToEven(n)
+	if n < -9223372036854775808.0 || n >= 9223372036854775808.0 {
+		return 0, fmt.Errorf("invoice Int64 overflow")
+	}
+	return int64(n), nil
+}
+func invoiceMultiply(a, b int64) (int64, error) {
+	if (a == math.MinInt64 && b == -1) || (b == math.MinInt64 && a == -1) {
+		return 0, fmt.Errorf("invoice amount overflow")
+	}
+	result := a * b
+	if a != 0 && result/a != b {
+		return 0, fmt.Errorf("invoice amount overflow")
+	}
+	return result, nil
+}
+func invoiceAdd(a, b int64) (int64, error) {
+	if (b > 0 && a > math.MaxInt64-b) || (b < 0 && a < math.MinInt64-b) {
+		return 0, fmt.Errorf("invoice total overflow")
+	}
+	return a + b, nil
+}
+func invoiceNumber(v any) string {
+	n, err := strconv.ParseFloat(fmt.Sprint(v), 64)
+	if err != nil || math.IsNaN(n) || math.IsInf(n, 0) {
+		panic("invalid invoice numeric value")
+	}
+	x := strconv.FormatFloat(math.Abs(math.RoundToEven(n)), 'f', 0, 64)
+	for i := len(x) - 3; i > 0; i -= 3 {
+		x = x[:i] + "," + x[i:]
+	}
+	if math.Signbit(n) {
+		return "-" + x
+	}
+	return x
+}
+
 func integer(v string) int64 { n, _ := strconv.ParseInt(v, 10, 64); return n }
 func number(v any) string {
 	n := int64(num(v))

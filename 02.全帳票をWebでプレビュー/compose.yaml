@@ -1,7 +1,8 @@
 name: reports-web-go-02
 services:
   engine:
-    image: ghcr.io/reportsweb/engine:1.0.0
+    restart: unless-stopped
+    image: ghcr.io/reportsweb/engine:1.1.0
     healthcheck:
       test:
       - CMD
@@ -12,6 +13,8 @@ services:
       timeout: 3s
       retries: 40
   database:
+    # PR-331：初回の初期化中は、PostgreSQL が UNIX ソケットだけの一時サーバーで動き、ソケットの pg_isready は healthy になるが TCP は断る。
+    # Go のアプリは起動時の Ping に失敗して止まったので、TCP（127.0.0.1）で確かめる。
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: reports_web_sample
@@ -39,7 +42,7 @@ services:
     healthcheck:
       test:
       - CMD-SHELL
-      - pg_isready -U reports_web -d reports_web_sample
+      - pg_isready -h 127.0.0.1 -U reports_web -d reports_web_sample
       interval: 2s
       timeout: 3s
       retries: 40
@@ -76,7 +79,7 @@ services:
       timeout: 4s
       retries: 60
   runtime:
-    image: ghcr.io/reportsweb/engine:1.0.0
+    image: ghcr.io/reportsweb/engine:1.1.0
     user: root
     command:
     - export-runtime
