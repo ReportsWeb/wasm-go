@@ -37,7 +37,7 @@ go、database、engineが `Up`（起動中）になっていることを確認�
 
 このURLは、お使いのパソコン内で今起動したサーバーの入口です。公開デモサイトではないため、起動前にURLだけ開いても動きません。ポートを外部へ開放する設定も不要です。
 
-同梱の `.\Start.ps1`（Windows）／`sh start.sh`（macOS・Linux）でも、上と同じDockerコマンドを実行できます。
+同じフォルダーの `.\Start.ps1`（Windows）／`sh start.sh`（macOS・Linux）でも、上と同じDockerコマンドを実行できます。
 
 ## 3. 画面で確かめる
 
@@ -71,7 +71,7 @@ Goのソースはコンパイルが必要です。ブラウザーを開き直す
 |場所|役割|
 |---|---|
 |`catalog.go`|帳票を作る中心部分。`buildInvoice()`は請求書、`buildEstimate()`は見積書、`rows()`はSQLによるデータ取得|
-|`printdata/printdata.go`|値、明細、ページを印刷データへまとめる処理|
+|`../reportsweb/printdata.go`（このリポジトリの Go モジュール `github.com/ReportsWeb/wasm-go/reportsweb`）|値、明細、ページを印刷データへまとめる処理|
 |`main.go`|HTTP要求を受け、印刷データ・PDFを返す入口|
 |`resources/definitions/`|帳票ごとのデザイン（PREPDJ）|
 |`resources/images/`|角印などの画像|
@@ -79,7 +79,7 @@ Goのソースはコンパイルが必要です。ブラウザーを開き直す
 |`compose.yaml`|このサンプルで起動するサービスと接続先|
 |`Dockerfile`|Goの実行環境の作り方|
 
-まず`catalog.go`の`buildInvoice()`を読み、分からない呼び出しを`printdata/printdata.go`で調べてください。データ取得を調べる場合は`rows()`を読みます。
+まず`catalog.go`の`buildInvoice()`を読み、分からない呼び出しを`../reportsweb/printdata.go`で調べてください。データ取得を調べる場合は`rows()`を読みます。
 
 デザインは`resources/definitions/invoice.prepdj`をReports Webデザイナーで開いて編集できます。保存先をこのファイルに戻し、第4節のDockerコマンドで再ビルドしてから帳票をもう一度読み込みます。請求書はGo側でも明細の色や幅を指定しているため、それらの変更は`buildInvoice()`も確認してください。
 
@@ -113,7 +113,7 @@ docker compose down --volumes
 
 このサンプルのコンテナーとネットワーク、試用中のDBデータを削除します。編集したGoや帳票定義は消えません。別の01・02・03は停止しません。次に起動すると同じ初期データが自動で入ります。DBを残して一時停止するだけなら`docker compose stop`を使います。
 
-同梱の `.\Stop.ps1`／`sh stop.sh`でも同じ操作ができます。
+同じフォルダーの `.\Stop.ps1`／`sh stop.sh`でも同じ操作ができます。
 
 ### サンプル用イメージも削除して、最初から試す
 

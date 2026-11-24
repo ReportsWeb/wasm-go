@@ -12,15 +12,25 @@ Goで1ページの印刷データを作り、ブラウザーで表示・PDF保�
 
 この操作はブラウザー内の体験用です。プログラムが設定した文字も編集できるよう、現在の値をデザインへ入れて開きます。元の帳票ファイルやプログラムは上書きしません。ページを再読み込みすると元のサンプルに戻ります。編集結果を残す場合は、戻る前にデザイナーの保存機能で `.prepdj` を保存してください。ソースの値を変える練習とは別の操作です。
 
-## Dockerを使わずに、すぐ試す
+## Dockerを使わずに試したいとき
 
-GoとNode.js（PDFの作成に使います）があれば、Dockerなしで動きます。このフォルダーで次の1行を実行すると、ブラウザーに帳票が出ます。
+GitHubのこのリポジトリには、サンプルが使う帳票エンジンとデザイナー・プレビュー画面のファイル（Runtime）が入っていません。このリポジトリでは、下の「1.」からのDockerの手順で動かします。
+
+Dockerを使わずに動かしたいときは、製品サイト（https://www.pao.ac/reports.web/）の体験版「WASM・7 言語セット」のZIPを展開し、`WebAssembly/Samples/go/01.あっという間に帳票出力` のREADMEの手順で動かしてください。ZIPにはRuntimeが入っています。Go 1.25 以上と Node.js 22 以上（PDF の作成に使います）が要ります。
+
+このリポジトリのまま動かしたいときは、ZIPの `WebAssembly/Runtime/reports.web` フォルダーを環境変数 `REPORTS_WEB_ROOT` で指定します。
 
 ```sh
-go run .
+# macOS・Linux
+REPORTS_WEB_ROOT="<展開した場所>/Reports-Web-WASM/WebAssembly/Runtime/reports.web" go run .
 ```
 
-ブラウザーが開かないときは http://127.0.0.1:19250/ を開きます。このあとの節は、Dockerで起動する方法です。
+```powershell
+# Windows（PowerShell）
+$env:REPORTS_WEB_ROOT="<展開した場所>\Reports-Web-WASM\WebAssembly\Runtime\reports.web"; go run .
+```
+
+ブラウザーが開かないときは http://127.0.0.1:19250/ を開きます。
 
 ## 1. 用意するもの
 
@@ -55,7 +65,7 @@ quick-startとengineが `Up`（起動中）になっていることを確認し�
 
 このURLは、お使いのパソコン内で今起動したサーバーの入口です。公開デモサイトではないため、起動前にURLだけ開いても動きません。ポートを外部へ開放する設定も不要です。
 
-同梱の `.\Start.ps1`（Windows）／`sh start.sh`（macOS・Linux）でも、上と同じDockerコマンドを実行できます。
+同じフォルダーの `.\Start.ps1`（Windows）／`sh start.sh`（macOS・Linux）でも、上と同じDockerコマンドを実行できます。
 
 ## 3. 画面で確かめる
 
@@ -88,12 +98,12 @@ docker compose up -d --build --wait --wait-timeout 180
 |---|---|
 |`main.go`|帳票定義を読み、表示文字を指定する中心部分|
 |`definition/quick-report.prepdj`|1ページの帳票デザイン|
-|`printdata/printdata.go`|値とページをPREPEJへまとめる処理|
+|`../reportsweb/printdata.go`（このリポジトリの Go モジュール `github.com/ReportsWeb/wasm-go/reportsweb`）|値とページをPREPEJへまとめる処理|
 |`index.html`|Goから受け取った印刷データをプレビュアーへ渡す画面|
 |`compose.yaml`|このサンプルで起動するサービスと接続先|
 |`Dockerfile`|Goの実行環境の作り方|
 
-まず`main.go`を読み、その後に`printdata/printdata.go`、画面へ進めば十分です。
+まず`main.go`を読み、その後に`../reportsweb/printdata.go`、画面へ進めば十分です。
 
 デザインは`definition/quick-report.prepdj`をReports Webデザイナーで開いて編集できます。保存先をこのファイルに戻し、第4節のコマンドで再ビルドしてから帳票を読み込みます。
 
@@ -127,7 +137,7 @@ docker compose down --volumes
 
 このサンプルのコンテナーとネットワークを削除します。編集したGoや帳票定義は消えません。別の01・02・03は停止しません。
 
-同梱の `.\Stop.ps1`／`sh stop.sh`でも同じ操作ができます。
+同じフォルダーの `.\Stop.ps1`／`sh stop.sh`でも同じ操作ができます。
 
 ### サンプル用イメージも削除して、最初から試す
 
