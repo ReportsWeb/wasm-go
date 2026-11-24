@@ -3,7 +3,7 @@ package reportsweb
 import "testing"
 
 func TestLifecycleAndValues(t *testing.T) {
-	d := Map{"Version": "1", "CoordinateUnit": "mm", "Objects": []any{}}
+	d := Map{"Version": "1", "CoordinateUnit": "mm", "Objects": []any{Map{"Name": "x", "Kind": 0}, Map{"Name": "total", "Kind": 0}}}
 	b := New()
 	if err := b.SetDefinition(d); err != nil {
 		t.Fatal(err)
@@ -34,7 +34,7 @@ func TestRejectsInvalidState(t *testing.T) {
 	if New().PageStart(nil) == nil {
 		t.Fatal("definition must be required")
 	}
-	d := Map{"Version": "1", "CoordinateUnit": "mm", "Objects": []any{}}
+	d := Map{"Version": "1", "CoordinateUnit": "mm", "Objects": []any{Map{"Name": "x", "Kind": 0}, Map{"Name": "total", "Kind": 0}}}
 	b := New()
 	_ = b.SetDefinition(d)
 	_ = b.PageStart(nil)

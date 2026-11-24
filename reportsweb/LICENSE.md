@@ -5,7 +5,7 @@ Copyright (c) Pao@Office. All rights reserved.
 This package is part of **Reports.Web**, a commercial product of Pao@Office.
 Use of this package is governed by the Reports.Web End User License Agreement:
 
-- 使用許諾（正式な条件）: https://www.pao.ac/reports.web/manual/index.html#16
+- 使用許諾（正式な条件、共通マニュアル第16章）: https://www.pao.ac/reports.web/manual/Reports-Web-Guide.pdf
 - 製品サイト: https://www.pao.ac/reports.web/
 - ご購入・お見積もり: https://www.pao.ac/reports.web/buy.html
 

@@ -4,7 +4,7 @@ import "testing"
 
 func TestIndicesSnapshotAndFailedDefinition(t *testing.T) {
 	b := New()
-	d := Map{"Version": "1", "Objects": []any{}}
+	d := Map{"Version": "1", "Objects": []any{Map{"Name": "x", "Kind": 0}, Map{"Name": "total", "Kind": 0}}}
 	if err := b.SetDefinition(d); err != nil {
 		t.Fatal(err)
 	}
