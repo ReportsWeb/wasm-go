@@ -201,7 +201,7 @@ func (a *app) buildPostal() (*reportsweb.Builder, error) {
 			b.SetValueAt("住所", at(v, 2), i, true)
 			b.SetValueAt("横罫線", nil, i, true)
 			if page >= 5 && i%2 == 1 {
-				b.SetValueAt("網掛け", nil, i, true)
+				b.SetValueAt("網掛け", nil, i/2, true)
 			}
 		}
 		if page < 5 && start < end {
