@@ -86,7 +86,7 @@ Go アプリ ──(印刷データ PREPEJ / JSON)──▶ 帳票エンジン g
 
 **Reports.Web** is a report designer and PDF engine. Design report layouts (invoices, estimates, delivery slips, address labels, business cards) in the browser, then build print data (PREPEJ JSON) from your application and render PDF with the C++ WebAssembly engine. This repository contains the **Go** samples — the same source as the distributed trial ZIP.
 
-- Module: [`github.com/ReportsWeb/wasm-go/reportsweb`](reportsweb/README.md) (`go get github.com/ReportsWeb/wasm-go/reportsweb@v1.0.0`)
+- Module: [`github.com/ReportsWeb/wasm-go/reportsweb`](reportsweb/README.md) (`go get github.com/ReportsWeb/wasm-go/reportsweb@v1.3.0`)
 - Engine: [`ghcr.io/reportsweb/engine`](https://github.com/ReportsWeb/engine) (Docker)
 - Live demo: https://www.pao.ac/demo/reports.web/samples/go/
 

@@ -1,4 +1,5 @@
 FROM golang:1.25-bookworm AS build
+ENV GOMAXPROCS=2
 WORKDIR /work
 COPY go.mod go.sum ./
 RUN go mod download

@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/ReportsWeb/wasm-go/reportsweb"
+	"errors"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/ReportsWeb/wasm-go/reportsweb"
 	"html"
 	"io"
 	"log"
@@ -286,6 +287,11 @@ func (a *app) pdf(w http.ResponseWriter, r *http.Request, sample string) {
 	}
 	body, e := io.ReadAll(r.Body)
 	if e != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(e, &tooLarge) {
+			problem(w, 413, "印刷データは64MiB以内にしてください。")
+			return
+		}
 		problem(w, 400, "JSON形式が不正です。")
 		return
 	}
@@ -342,7 +348,7 @@ func inline(v any, a *app) error {
 		} else if k == "ImagePath" && strings.HasPrefix(s, "data:image/") && strings.Contains(s, ";base64,") {
 			m["ImageDataBase64"] = s[strings.Index(s, ",")+1:]
 			m[k] = ""
-		} else if k == "ImagePath" && s != "" && !strings.HasPrefix(s, "data:") {
+		} else if k == "ImagePath" && s != "" && !strings.HasPrefix(s, "data:") && !strings.HasPrefix(strings.ToLower(s), "http://") && !strings.HasPrefix(strings.ToLower(s), "https://") { // OP-IMGSRC：http・https の URL はそのままエンジンへ（読むかはエンジンの設定）
 			first = fmt.Errorf("外部画像は登録した画像か埋め込み画像を使用してください。")
 		}
 	})

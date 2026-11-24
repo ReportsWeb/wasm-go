@@ -1,6 +1,7 @@
 FROM golang:1.25-alpine AS build
+ENV GOMAXPROCS=2
 WORKDIR /src
-COPY go.mod go.sum ./
+COPY go.mod ./
 RUN go mod download
 COPY main.go ./
 RUN go build -o /quick-start .
